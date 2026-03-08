@@ -1,16 +1,33 @@
-# tic_tac_toe
+# Tic-Tac-Toe
 
-A new Flutter project.
+A Flutter implementation of Tic-Tac-Toe submitted as a technical test for Betclic. The app supports Human vs Human and Human vs AI game modes, with score and configurable first player (human or AI, in the appropriate game mode).
 
-## Getting Started
+## Tech stack
 
-This project is a starting point for a Flutter application.
+The project uses technologies aligned with Betclic’s Flutter stack:
 
-A few resources to get you started if this is your first Flutter project:
+- flutter_riverpod
+- go_router
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Additional dependencies are present for stream management, preferences or helpers.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Architecture
+
+The codebase follows Clean Architecture principles with a clear separation between business logic and UI.
+
+### Dependency injection
+
+A small service locator in `lib/utils/injector.dart` is used to register and resolve dependencies. Registration happens at startup in `main.dart`. This keeps controllers testable and swappable.
+
+### Structure
+
+- **`lib/controllers/`** — Game management and intelligence for the AI.
+- **`lib/pages/`** — Screens. They use Riverpod to watch state, that itself uses the game controller.
+- **`lib/widgets/`** — Reusable UI (e.g. board cell, winner overlay).
+- **`lib/utils/`** — Injector, theme/design, preferences, and extensions.
+- **`lib/models/`** — Shared abstractions used across layers.
+
+Routing is centralized in `main.dart` with `go_router`.
+
+## Author
+Ryan Danenberg
