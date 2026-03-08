@@ -1,91 +1,121 @@
-import 'package:tic_tac_toe/utils/preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tic_tac_toe/utils/preferences.dart';
 import 'package:tic_tac_toe/utils/theme/design_system.dart';
 
-class AppTheme with ChangeNotifier {
-  ThemeMode _mode;
-  ThemeMode get mode => _mode;
+final appThemeProvider = NotifierProvider<AppTheme, AppThemeState>(AppTheme.new);
 
+class AppThemeState {
+  final ThemeMode mode;
+  final ThemeData theme;
+  final ThemeData darkTheme;
+
+  AppThemeState({
+    required this.mode,
+    required this.theme,
+    required this.darkTheme,
+  });
+
+  AppThemeState copyWith({
+    ThemeMode? mode,
+    ThemeData? theme,
+    ThemeData? darkTheme,
+  }) {
+    return AppThemeState(
+      mode: mode ?? this.mode,
+      theme: theme ?? this.theme,
+      darkTheme: darkTheme ?? this.darkTheme,
+    );
+  }
+}
+
+class AppTheme extends Notifier<AppThemeState> {
   bool startup = true;
-  AppTheme({
-    ThemeMode mode = ThemeMode.system,
-  }) : _mode = mode {
+
+  @override
+  AppThemeState build() {
     final modeString = preferences.getThemeMode();
-    setModeString(modeString);
+    final mode = _fromString(modeString);
+
+    _applyOverlay(mode);
+
+    return AppThemeState(
+      mode: mode,
+      theme: _theme,
+      darkTheme: _darkTheme,
+    );
   }
 
-  ///
-  /// Set the theme mode of the app between light, dark and system.
-  ///
-  void setMode(ThemeMode m) {
-    _mode = m;
-    if (_mode == ThemeMode.light) {
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
-    } else if (_mode == ThemeMode.dark) {
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
-    } else {
-      SystemChrome.restoreSystemUIOverlays();
-    }
-    preferences.setThemeMode(m.toString());
-    notifyListeners();
+  /// Set theme mode directly
+  void setMode(ThemeMode mode) {
+    state = state.copyWith(mode: mode);
+
+    _applyOverlay(mode);
+    preferences.setThemeMode(mode.toString());
   }
 
-  ///
-  /// Set the theme mode of the app from a string.
-  ///
-  void setModeString(String m) {
-    switch (m) {
-      case "ThemeMode.light":
-        setMode(ThemeMode.light);
-        break;
-      case "ThemeMode.dark":
-        setMode(ThemeMode.dark);
-        break;
-      case "ThemeMode.system":
-      default:
-        setMode(ThemeMode.system);
-    }
-
-    notifyListeners();
+  /// Set theme mode from string
+  void setModeString(String value) {
+    setMode(_fromString(value));
   }
 
+  /// Toggle dark/light
   void switchMode() {
-    if (_mode == ThemeMode.dark) {
+    if (state.mode == ThemeMode.dark) {
       setMode(ThemeMode.light);
     } else {
       setMode(ThemeMode.dark);
     }
   }
 
-  ///
-  /// Helper method to access [DesignSystem].
-  ///
+  ThemeMode _fromString(String m) {
+    switch (m) {
+      case "ThemeMode.light":
+        return ThemeMode.light;
+      case "ThemeMode.dark":
+        return ThemeMode.dark;
+      case "ThemeMode.system":
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  void _applyOverlay(ThemeMode mode) {
+    if (mode == ThemeMode.light) {
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    } else if (mode == ThemeMode.dark) {
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    } else {
+      SystemChrome.restoreSystemUIOverlays();
+    }
+  }
+
+  /// /// Helper method to access [DesignSystem].
   static DesignSystem of(BuildContext context) {
     return Theme.of(context).extension<DesignSystem>()!;
   }
 
   /// Helper method to access [StatusDesignSystem].
-  ///
   static StatusDesignSystem status(BuildContext context) {
     return Theme.of(context).extension<StatusDesignSystem>()!;
   }
 
+  /// Light theme
   ThemeData get theme => _theme;
+
+  /// Dark theme
   ThemeData get darkTheme => _darkTheme;
 
-  ///
-  /// Light theme of the app.
-  ///
   final ThemeData _theme = ThemeData(
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       bodySmall: TextStyle(color: Colors.white),
       bodyMedium: TextStyle(color: Colors.white),
       bodyLarge: TextStyle(color: Colors.white),
     ),
     extensions: <ThemeExtension<dynamic>>[
       StatusDesignSystem(),
-      DesignSystem(
+      const DesignSystem(
         primaryColor: Colors.indigo,
         secondaryColor: Colors.teal,
         foregroundColor: Colors.white,
@@ -93,13 +123,10 @@ class AppTheme with ChangeNotifier {
     ],
   );
 
-  static const Color _darkForeground = const Color.fromARGB(255, 210, 210, 210);
+  static const Color _darkForeground = Color.fromARGB(255, 210, 210, 210);
 
-  ///
-  /// Dark theme of the app.
-  ///
   final ThemeData _darkTheme = ThemeData(
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       bodySmall: TextStyle(color: _darkForeground),
       bodyMedium: TextStyle(color: _darkForeground),
       bodyLarge: TextStyle(color: _darkForeground),

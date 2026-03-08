@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:tic_tac_toe/controllers/game_controller.dart';
+import 'package:tic_tac_toe/pages/game_grid/game_grid_page.dart';
 import 'package:tic_tac_toe/pages/menus/first_player_choice_page.dart';
 import 'package:tic_tac_toe/utils/extensions/context_extension.dart';
 import 'package:tic_tac_toe/utils/extensions/extensions.dart';
+import 'package:tic_tac_toe/utils/injector.dart';
 import 'package:tic_tac_toe/utils/theme/app_padding.dart';
 import 'package:tic_tac_toe/utils/theme/app_theme.dart';
 
-class GameSizePage extends StatelessWidget {
-  const GameSizePage({super.key});
+class GameModeSelectionPage extends StatelessWidget {
+  const GameModeSelectionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -16,12 +18,12 @@ class GameSizePage extends StatelessWidget {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => _startGame(context, 3),
+              onTap: () => _startGame(context, GameMode.humanVsHuman),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).primaryColor,
                 child: Text(
-                  "3x3",
+                  "Human vs Human",
                   style: optionStyle,
                 ),
               ),
@@ -32,18 +34,18 @@ class GameSizePage extends StatelessWidget {
             color: AppTheme.of(context).foregroundColor,
             padding: AppPadding.medium.verticalInsets(),
             child: Text(
-              "Grid size",
+              "Game mode",
               style: TextStyle(fontSize: 16, color: AppTheme.of(context).primaryColor),
             ),
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => _startGame(context, 6),
+              onTap: () => _startGame(context, GameMode.humanVsAi),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).secondaryColor,
                 child: Text(
-                  "6x6",
+                  "Human vs AI",
                   style: optionStyle,
                 ),
               ),
@@ -56,9 +58,16 @@ class GameSizePage extends StatelessWidget {
 
   TextStyle get optionStyle => TextStyle(fontSize: 22, fontWeight: FontWeight.bold);
 
-  void _startGame(BuildContext context, int gridSize) {
-    gameController.setGridSize(gridSize);
+  void _startGame(BuildContext context, GameMode gameMode) {
+    final IGameController gameController = Injector.get<IGameController>();
 
-    context.fadingTo(FirstPlayerChoicePage());
+    gameController.setGameMode(gameMode);
+
+    if (gameMode == GameMode.humanVsAi) {
+      context.fadingTo(FirstPlayerChoicePage());
+    } else {
+      gameController.init();
+      context.fadingTo(GameGridPage());
+    }
   }
 }

@@ -1,9 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:tic_tac_toe/controllers/game_controller.dart';
 import 'package:tic_tac_toe/utils/theme/app_padding.dart';
 import 'package:tic_tac_toe/utils/theme/app_theme.dart';
-import 'package:tic_tac_toe/widgets/game_tick.dart';
 
 class WinnerOverlay {
   static Future trigger(BuildContext context, GameTickType tick) => showDialog(

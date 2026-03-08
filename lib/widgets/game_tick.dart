@@ -2,24 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tic_tac_toe/controllers/game_controller.dart';
 import 'package:tic_tac_toe/utils/theme/app_theme.dart';
 
-enum GameTickType {
-  none,
-  circle,
-  cross;
-
-  bool? get asBool => switch (this) {
-    none => null,
-    circle => true,
-    cross => false,
-  };
-
-  GameTickType get other => switch (this) {
-    none => none,
-    circle => cross,
-    cross => circle,
-  };
-}
-
 class GameTickWidget extends StatefulWidget {
   const GameTickWidget({
     super.key,
@@ -59,7 +41,7 @@ class _GameTickWidgetState extends State<GameTickWidget> with SingleTickerProvid
       scale: animation,
       child: Icon(
         icon,
-        size: MediaQuery.sizeOf(context).width / (gameController.gridSize + 1),
+        size: MediaQuery.sizeOf(context).width / (GameController.gridSize + 1),
         color: AppTheme.of(context).foregroundColor,
       ),
     );

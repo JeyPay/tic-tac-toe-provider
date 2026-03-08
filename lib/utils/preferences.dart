@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// SHA512 of "PayServices" + underscore
 const String _storageKey = "TicTacToe";
 
 /// {@template preferences}

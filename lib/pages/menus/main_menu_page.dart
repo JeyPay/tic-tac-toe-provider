@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:tic_tac_toe/pages/menus/game_size_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tic_tac_toe/pages/menus/game_mode_selection_page.dart';
 import 'package:tic_tac_toe/utils/extensions/context_extension.dart';
 import 'package:tic_tac_toe/utils/extensions/extensions.dart';
 import 'package:tic_tac_toe/utils/theme/app_padding.dart';
 import 'package:tic_tac_toe/utils/theme/app_theme.dart';
 
-class MainMenuPage extends StatelessWidget {
+class MainMenuPage extends ConsumerWidget {
   const MainMenuPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Material(
       child: Column(
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => context.fadingTo(GameSizePage()),
+              onTap: () => context.fadingTo(GameModeSelectionPage()),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).primaryColor,
@@ -38,7 +38,7 @@ class MainMenuPage extends StatelessWidget {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => context.read<AppTheme>().switchMode(),
+              onTap: () => ref.read(appThemeProvider.notifier).switchMode(),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).secondaryColor,

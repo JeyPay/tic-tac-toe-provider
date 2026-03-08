@@ -1,5 +1,7 @@
+import 'package:riverpod/riverpod.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:tic_tac_toe/widgets/game_tick.dart';
+import 'package:tic_tac_toe/controllers/game_intelligence_controller.dart';
+import 'package:tic_tac_toe/utils/injector.dart';
 
 ///
 /// Indicates a position on the grid by cell numbers (column and row).
@@ -12,6 +14,21 @@ typedef GridPos = ({int col, int row});
 typedef GridLine = ({GridPos from, GridPos to});
 
 ///
+/// Representation of the type of a tick on the grid.
+///
+enum GameTickType {
+  none,
+  circle,
+  cross;
+
+  GameTickType get other => switch (this) {
+    none => none,
+    circle => cross,
+    cross => circle,
+  };
+}
+
+///
 /// Game status (or state).
 ///
 enum GameStatus {
@@ -21,104 +38,158 @@ enum GameStatus {
   draw,
 }
 
-class GameController {
+enum GameMode {
+  humanVsHuman,
+  humanVsAi,
+}
+
+abstract class IGameController {
   ///
-  /// Game grid size.
+  /// Stream of the current player playing.
   ///
-  int get gridSize => _gridSize;
-  int _gridSize = 3;
+  ValueStream<GameTickType> get playerTurnStream;
 
   ///
-  /// First player to perform an action.
+  /// Stream of the player who won.
   ///
-  GameTickType _firstPlayer = GameTickType.cross;
+  ValueStream<GameTickType> get winnerStream;
 
   ///
   /// Stream of the grid values.
   ///
-  ValueStream<List<List<GameTickType>>> get gridStream => _gridSubject.stream;
-  BehaviorSubject<List<List<GameTickType>>> _gridSubject = BehaviorSubject.seeded([]);
-
-  ///
-  /// Stream of the current player playing.
-  ///
-  ValueStream<GameTickType> get playerTurnStream => _playerTurnSubject.stream;
-  BehaviorSubject<GameTickType> _playerTurnSubject = BehaviorSubject.seeded(GameTickType.none);
-
-  ///
-  /// Stream the player who won.
-  ///
-  ValueStream<GameTickType> get winnerStream => _winnerSubject.stream;
-  BehaviorSubject<GameTickType> _winnerSubject = BehaviorSubject.seeded(GameTickType.none);
-
-  ///
-  /// Stream the coordinates (as cell numbers) of the winning line on the grid.
-  ///
-  ValueStream<GridLine?> get winnerLineStream => _winnerLineSubject.stream;
-  BehaviorSubject<GridLine?> _winnerLineSubject = BehaviorSubject.seeded(null);
-
-  ///
-  /// Stream of the score of the `cross` player.
-  ///
-  ValueStream<int> get scoreCrossStream => _scoreCrossSubject.stream;
-  BehaviorSubject<int> _scoreCrossSubject = BehaviorSubject.seeded(0);
-
-  ///
-  /// Stream of the score of the `circle` player.
-  ///
-  ValueStream<int> get scoreCircleStream => _scoreCircleSubject.stream;
-  BehaviorSubject<int> _scoreCircleSubject = BehaviorSubject.seeded(0);
+  ValueStream<List<List<GameTickType>>> get gridStream;
 
   ///
   /// Stream of the game status.
   ///
-  ValueStream<GameStatus> get gameStatusStream => _gameStatusSubject.stream;
-  BehaviorSubject<GameStatus> _gameStatusSubject = BehaviorSubject.seeded(GameStatus.none);
+  ValueStream<GameStatus> get gameStatusStream;
+
+  ///
+  /// Stream of the coordinates (as cell numbers) of the winning line on the grid.
+  ///
+  ValueStream<GridLine?> get winnerLineStream;
+
+  ///
+  /// Stream of the score of the `cross` player.
+  ///
+  ValueStream<int> get scoreCrossStream;
+
+  ///
+  /// Stream of the score of the `circle` player.
+  ///
+  ValueStream<int> get scoreCircleStream;
+
+  ///
+  /// Stream of the last move played.
+  ///
+  ValueStream<GridPos?> get lastMoveStream;
 
   ///
   /// Initialize the game controller.
   ///
-  void init() {
-    _playerTurnSubject.value = _firstPlayer;
-    reset();
-  }
+  void init();
 
   ///
   /// Reset the game controller.
   ///
+  void reset();
+
+  ///
+  /// Set the player that place its first tick.
+  ///
+  void setGameMode(GameMode gameMode);
+
+  ///
+  /// Start a new game, do not reset the score and alternate the player to start.
+  ///
+  void startNewGame();
+
+  ///
+  /// Place the player at the given grid position.
+  ///
+  void placeTickAt(int rowIndex, int colIndex);
+
+  ///
+  /// Set the player that place its first tick.
+  ///
+  void setFirstPlayer(GameTickType tickType);
+}
+
+class GameController implements IGameController {
+  late final IGameIntelligenceController gameIntelligenceController = Injector.get<IGameIntelligenceController>();
+
+  static const int gridSize = 3;
+  static const GameTickType humanPlayerTickType = GameTickType.cross;
+  static const GameTickType aiPlayerTickType = GameTickType.circle;
+
+  ///
+  /// Game mode.
+  ///
+  GameMode _gameMode = GameMode.humanVsAi;
+
+  ValueStream<List<List<GameTickType>>> get gridStream => _gridSubject.stream;
+  BehaviorSubject<List<List<GameTickType>>> _gridSubject = BehaviorSubject.seeded([]);
+
+  ValueStream<GameTickType> get playerTurnStream => _playerTurnSubject.stream;
+  BehaviorSubject<GameTickType> _playerTurnSubject = BehaviorSubject.seeded(GameTickType.circle);
+
+  ValueStream<GameTickType> get winnerStream => _winnerSubject.stream;
+  BehaviorSubject<GameTickType> _winnerSubject = BehaviorSubject.seeded(GameTickType.none);
+
+  ValueStream<GridLine?> get winnerLineStream => _winnerLineSubject.stream;
+  BehaviorSubject<GridLine?> _winnerLineSubject = BehaviorSubject.seeded(null);
+
+  ValueStream<int> get scoreCrossStream => _scoreCrossSubject.stream;
+  BehaviorSubject<int> _scoreCrossSubject = BehaviorSubject.seeded(0);
+
+  ValueStream<int> get scoreCircleStream => _scoreCircleSubject.stream;
+  BehaviorSubject<int> _scoreCircleSubject = BehaviorSubject.seeded(0);
+
+  ValueStream<GameStatus> get gameStatusStream => _gameStatusSubject.stream;
+  BehaviorSubject<GameStatus> _gameStatusSubject = BehaviorSubject.seeded(GameStatus.none);
+
+  ValueStream<GridPos?> get lastMoveStream => _lastMoveSubject.stream;
+  BehaviorSubject<GridPos?> _lastMoveSubject = BehaviorSubject.seeded(null);
+
+  void init() {
+    reset();
+
+    if (_gameMode == GameMode.humanVsAi && _playerTurnSubject.value == aiPlayerTickType) {
+      _aiPlay();
+    }
+  }
+
   void reset() {
     _resetSubjects();
     _generateEmptyGrid();
   }
 
-  ///
-  /// Set the game grid size.
-  ///
-  void setGridSize(int gridSize) {
-    _gridSize = gridSize;
-  }
-
-  ///
-  /// Set the player that place its first tick.
-  ///
   void setFirstPlayer(GameTickType tickType) {
-    _firstPlayer = tickType;
+    _playerTurnSubject.value = tickType;
   }
 
-  ///
-  /// Start a new game, do not reset the score and alternate the player to start.
-  ///
+  void setGameMode(GameMode gameMode) {
+    _gameMode = gameMode;
+  }
+
   void startNewGame() {
     _resetSubjects(soft: true);
-    _playerTurnSubject.value = _playerTurnSubject.value.other;
+    _playerTurnSubject.value = _playerTurnSubject.value;
     _generateEmptyGrid();
+    gameIntelligenceController.reset();
+    if (_gameMode == GameMode.humanVsAi && _playerTurnSubject.value == aiPlayerTickType) {
+      _aiPlay();
+    }
   }
 
-  ///
-  /// Place the player at the given grid position.
-  ///
   void placeTickAt(int rowIndex, int colIndex) {
     _setGridValue(rowIndex, colIndex);
+
+    final winnerLine = gameIntelligenceController.checkWin(_gridSubject.value);
+    if (winnerLine != null) {
+      _onWinnerFound(winnerLine);
+      return;
+    }
 
     final isDraw = _drawCheck();
     if (isDraw) {
@@ -126,22 +197,13 @@ class GameController {
       return;
     }
 
-    final winnerLine = _winCheck();
-    if (winnerLine != null) {
-      _onWinnerFound(winnerLine);
-      return;
-    }
-
-    _played();
+    _onPlayerPlayed(rowIndex, colIndex);
   }
 
-  ///
-  /// Generate a brand new grid based on the set grid size.
-  ///
   void _generateEmptyGrid() {
     final List<List<GameTickType>> grid = [];
 
-    for (int row = 0; row < _gridSize; row++) {
+    for (int row = 0; row < gridSize; row++) {
       final List<GameTickType> newRow = [];
       grid.add(newRow);
       for (int col = 0; col < gridSize; col++) {
@@ -159,10 +221,11 @@ class GameController {
   ///
   void _resetSubjects({bool soft = true}) {
     _gridSubject.value = [];
-    if (!soft) _playerTurnSubject.value = _firstPlayer;
+    if (!soft) _playerTurnSubject.value = humanPlayerTickType;
     _winnerSubject.value = GameTickType.none;
     _winnerLineSubject.value = null;
     _gameStatusSubject.value = GameStatus.none;
+    _lastMoveSubject.value = null;
   }
 
   ///
@@ -197,97 +260,27 @@ class GameController {
   ///
   /// It changes the player to play.
   ///
-  void _played() {
+  void _onPlayerPlayed(int rowIndex, int colIndex) {
+    _lastMoveSubject.value = (col: colIndex, row: rowIndex);
+
     _playerTurnSubject.value = _playerTurnSubject.value.other;
+
+    if (_gameMode == GameMode.humanVsAi && _playerTurnSubject.value == aiPlayerTickType) {
+      _aiPlay();
+    }
   }
 
   ///
-  /// Check if there is a winner on the current grid.
+  /// Play the AI.
   ///
-  GridLine? _winCheck() {
-    final grid = _gridSubject.value;
-
-    // --- Horizontal check ---
-    int lastRow = 0;
-    int lastCol = 0;
-    for (int row = 0; row < _gridSize; row++) {
-      GameTickType first = grid[row][0];
-      if (first == GameTickType.none) continue;
-      bool allSame = true;
-      for (int col = 1; col < _gridSize; col++) {
-        if (grid[row][col] != first) {
-          allSame = false;
-          break;
-        }
-        lastRow = row;
-        lastCol = col;
-      }
-      if (allSame)
-        return (
-          from: (col: 0, row: lastRow),
-          to: (col: gridSize - 1, row: lastRow),
-        );
+  void _aiPlay() {
+    final nextMove = gameIntelligenceController.getNextMove(
+      _gridSubject.value,
+      opponentLastMove: _lastMoveSubject.value,
+    );
+    if (nextMove != null) {
+      placeTickAt(nextMove.row, nextMove.col);
     }
-
-    // --- Vertical check ---
-    for (int col = 0; col < _gridSize; col++) {
-      GameTickType first = grid[0][col];
-      if (first == GameTickType.none) continue;
-      bool allSame = true;
-      for (int row = 1; row < _gridSize; row++) {
-        if (grid[row][col] != first) {
-          allSame = false;
-          break;
-        }
-        lastRow = row;
-        lastCol = col;
-      }
-      if (allSame) {
-        return (
-          from: (col: lastCol, row: 0),
-          to: (col: lastCol, row: gridSize - 1),
-        );
-      }
-    }
-
-    // --- Diagonal check (top-left to bottom-right) ---
-    GameTickType firstMainDiagonal = grid[0][0];
-    if (firstMainDiagonal != GameTickType.none) {
-      bool allSame = true;
-      for (int i = 1; i < _gridSize; i++) {
-        if (grid[i][i] != firstMainDiagonal) {
-          allSame = false;
-          break;
-        }
-      }
-      if (allSame) {
-        return (
-          from: (col: 0, row: 0),
-          to: (col: gridSize - 1, row: gridSize - 1),
-        );
-      }
-    }
-
-    // --- Diagonal check (top-right to bottom-left) ---
-    GameTickType firstAntiDiagonal = grid[0][_gridSize - 1];
-    if (firstAntiDiagonal != GameTickType.none) {
-      bool allSame = true;
-      for (int i = 1; i < _gridSize; i++) {
-        if (grid[i][_gridSize - i - 1] != firstAntiDiagonal) {
-          allSame = false;
-          break;
-        }
-      }
-      if (allSame) {
-        return (
-          from: (col: 0, row: gridSize - 1),
-          to: (col: gridSize - 1, row: 0),
-        );
-      }
-    }
-
-    // --- No winning line found ---
-    return null;
   }
 
   ///
@@ -298,4 +291,11 @@ class GameController {
   }
 }
 
-final GameController gameController = GameController();
+// final GameController gameController = GameController();
+final gameControllerProvider = Provider<IGameController>((ref) {
+  final controller = Injector.get<IGameController>();
+
+  ref.onDispose(controller.reset);
+
+  return controller;
+});

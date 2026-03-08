@@ -3,9 +3,9 @@ import 'package:tic_tac_toe/controllers/game_controller.dart';
 import 'package:tic_tac_toe/pages/game_grid/game_grid_page.dart';
 import 'package:tic_tac_toe/utils/extensions/context_extension.dart';
 import 'package:tic_tac_toe/utils/extensions/extensions.dart';
+import 'package:tic_tac_toe/utils/injector.dart';
 import 'package:tic_tac_toe/utils/theme/app_padding.dart';
 import 'package:tic_tac_toe/utils/theme/app_theme.dart';
-import 'package:tic_tac_toe/widgets/game_tick.dart';
 
 class FirstPlayerChoicePage extends StatelessWidget {
   const FirstPlayerChoicePage({super.key});
@@ -17,12 +17,12 @@ class FirstPlayerChoicePage extends StatelessWidget {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => _startGame(context, GameTickType.circle),
+              onTap: () => _startGame(context, GameController.aiPlayerTickType),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).primaryColor,
                 child: Text(
-                  "Circle",
+                  "AI",
                   style: optionStyle,
                 ),
               ),
@@ -39,12 +39,12 @@ class FirstPlayerChoicePage extends StatelessWidget {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => _startGame(context, GameTickType.cross),
+              onTap: () => _startGame(context, GameController.humanPlayerTickType),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).secondaryColor,
                 child: Text(
-                  "Cross",
+                  "Player",
                   style: optionStyle,
                 ),
               ),
@@ -58,6 +58,8 @@ class FirstPlayerChoicePage extends StatelessWidget {
   TextStyle get optionStyle => TextStyle(fontSize: 22, fontWeight: FontWeight.bold);
 
   void _startGame(BuildContext context, GameTickType tickType) {
+    final IGameController gameController = Injector.get<IGameController>();
+
     gameController.setFirstPlayer(tickType);
     gameController.init();
 
