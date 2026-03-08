@@ -16,6 +16,8 @@ import 'package:tic_tac_toe/widgets/game_tick.dart';
 import 'package:tic_tac_toe/widgets/winner_overlay.dart';
 
 class GameGridPage extends ConsumerWidget {
+  static const String path = '/game-grid';
+
   const GameGridPage({super.key});
 
   static Widget separator(BuildContext context) => Container(height: 5, color: AppTheme.of(context).foregroundColor);
@@ -80,7 +82,7 @@ class GameGridPage extends ConsumerWidget {
 
   Widget _bottomBar(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.popAll(),
+      onTap: () => context.popToRoot(),
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(

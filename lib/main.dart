@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tic_tac_toe/controllers/game_controller.dart';
 import 'package:tic_tac_toe/controllers/game_intelligence_controller.dart';
+import 'package:tic_tac_toe/pages/game_grid/game_grid_page.dart';
+import 'package:tic_tac_toe/pages/menus/first_player_choice_page.dart';
+import 'package:tic_tac_toe/pages/menus/game_mode_selection_page.dart';
 import 'package:tic_tac_toe/pages/menus/main_menu_page.dart';
 import 'package:tic_tac_toe/utils/injector.dart';
 import 'package:tic_tac_toe/utils/preferences.dart';
@@ -23,11 +27,43 @@ class AppRoot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return MaterialApp(
+    return MaterialApp.router(
       theme: ref.watch(appThemeProvider).theme,
       darkTheme: ref.watch(appThemeProvider).darkTheme,
       themeMode: ref.watch(appThemeProvider).mode,
-      home: MainMenuPage(),
+      routerConfig: _router,
     );
   }
 }
+
+final GoRouter _router = GoRouter(
+  routes: <RouteBase>[
+    GoRoute(
+      path: '/',
+      builder: (BuildContext context, GoRouterState state) {
+        return const MainMenuPage();
+      },
+      routes: <RouteBase>[
+        for (final page in [
+          (GameGridPage.path, GameGridPage()),
+          (GameModeSelectionPage.path, GameModeSelectionPage()),
+          (FirstPlayerChoicePage.path, FirstPlayerChoicePage()),
+        ])
+          GoRoute(
+            path: page.$1,
+            pageBuilder: (context, state) => CustomTransitionPage(
+              key: state.pageKey,
+              transitionDuration: const Duration(milliseconds: 200),
+              child: page.$2,
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: child,
+                );
+              },
+            ),
+          ),
+      ],
+    ),
+  ],
+);

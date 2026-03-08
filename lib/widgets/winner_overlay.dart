@@ -54,18 +54,20 @@ class _WinnerWidgetState extends State<_WinnerWidget> with SingleTickerProviderS
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       parent.forward().then((value) async {
-        setState(() {
-          parent.reverse();
-        });
-        Future.delayed(parent.duration!).then((value) => Navigator.pop(context));
+        if (mounted)
+          setState(() {
+            parent.reverse();
+          });
+        Future.delayed(parent.duration!).then((value) => mounted ? Navigator.pop(context) : null);
       });
     });
   }
 
   @override
   void dispose() {
-    super.dispose();
     parent.dispose();
+
+    super.dispose();
   }
 
   @override

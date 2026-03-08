@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:tic_tac_toe/pages/menus/game_mode_selection_page.dart';
-import 'package:tic_tac_toe/utils/extensions/context_extension.dart';
 import 'package:tic_tac_toe/utils/extensions/extensions.dart';
 import 'package:tic_tac_toe/utils/theme/app_padding.dart';
 import 'package:tic_tac_toe/utils/theme/app_theme.dart';
@@ -16,7 +16,7 @@ class MainMenuPage extends ConsumerWidget {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => context.fadingTo(GameModeSelectionPage()),
+              onTap: () => context.go(GameModeSelectionPage.path),
               child: Container(
                 alignment: Alignment.center,
                 color: AppTheme.of(context).primaryColor,
