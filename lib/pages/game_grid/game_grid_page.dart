@@ -40,67 +40,36 @@ class GameGridPage extends ConsumerWidget {
     return Material(
       child: Column(
         children: [
-          _topBar(context, gameGridState, ref),
+          _TopBar(),
           separator(context),
           Expanded(
             child: Stack(
               children: [
-                _gameGrid(gameGridState, context, ref),
+                _GameGrid(),
                 if (!gameGridState.isGameOngoing)
                   Positioned(
                     bottom: AppPadding.medium,
                     left: AppPadding.medium,
                     right: AppPadding.medium,
-                    child: _newGameButton(context),
+                    child: _NewGameButton(),
                   ),
               ],
             ),
           ),
           separator(context),
-          _bottomBar(context),
+          _BottomBar(),
         ],
       ),
     );
   }
+}
 
-  Widget _newGameButton(BuildContext context) {
-    final IGameController gameController = Injector.get<IGameController>();
+class _GameGrid extends ConsumerWidget {
+  const _GameGrid();
 
-    return GestureDetector(
-      onTap: () => gameController.startNewGame(),
-      child: Container(
-        alignment: Alignment.center,
-        padding: AppPadding.medium.verticalInsets(),
-        decoration: BoxDecoration(
-          color: AppTheme.status(context).warning,
-          borderRadius: AppRadius.medium.allRadius(),
-        ),
-        child: Text("New game", style: TextStyle(fontSize: 17)),
-      ),
-    );
-  }
-
-  Widget _bottomBar(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.popToRoot(),
-      child: Container(
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: AppTheme.of(context).secondaryColor,
-        ),
-        padding: EdgeInsets.only(
-          top: AppPadding.large,
-          bottom: max(MediaQuery.paddingOf(context).bottom, AppPadding.large),
-        ),
-        child: Text(
-          "Menu",
-          style: TextStyle(fontSize: 32),
-        ),
-      ),
-    );
-  }
-
-  Widget _gameGrid(GameGridState gameGridState, BuildContext context, WidgetRef ref) {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gameGridState = ref.watch(gameGridProvider);
     final gameActions = ref.watch(gameActionsProvider);
 
     return IgnorePointer(
@@ -150,8 +119,60 @@ class GameGridPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _topBar(BuildContext context, GameGridState gameGridState, WidgetRef ref) {
+class _BottomBar extends StatelessWidget {
+  const _BottomBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.popToRoot(),
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: AppTheme.of(context).secondaryColor,
+        ),
+        padding: EdgeInsets.only(
+          top: AppPadding.large,
+          bottom: max(MediaQuery.paddingOf(context).bottom, AppPadding.large),
+        ),
+        child: Text(
+          "Menu",
+          style: TextStyle(fontSize: 32),
+        ),
+      ),
+    );
+  }
+}
+
+class _NewGameButton extends StatelessWidget {
+  const _NewGameButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final IGameController gameController = Injector.get<IGameController>();
+
+    return GestureDetector(
+      onTap: () => gameController.startNewGame(),
+      child: Container(
+        alignment: Alignment.center,
+        padding: AppPadding.medium.verticalInsets(),
+        decoration: BoxDecoration(
+          color: AppTheme.status(context).warning,
+          borderRadius: AppRadius.medium.allRadius(),
+        ),
+        child: Text("New game", style: TextStyle(fontSize: 17)),
+      ),
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  const _TopBar();
+
+  @override
+  Widget build(BuildContext context) {
     final IGameController gameController = Injector.get<IGameController>();
 
     return Container(
@@ -167,10 +188,12 @@ class GameGridPage extends ConsumerWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _scoreIndicator(stream: gameController.scoreCrossStream, type: GameTickType.cross),
-            _playerPlayingIndicator(gameGridState, context),
-
-            _scoreIndicator(
+            _ScoreIndicator(
+              stream: gameController.scoreCrossStream,
+              type: GameTickType.cross,
+            ),
+            _PlayerPlayingIndicator(),
+            _ScoreIndicator(
               stream: gameController.scoreCircleStream,
               type: GameTickType.circle,
               rightSide: true,
@@ -180,8 +203,55 @@ class GameGridPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _playerPlayingIndicator(GameGridState gameGridState, BuildContext context) {
+class _ScoreIndicator extends StatelessWidget {
+  final GameTickType type;
+  final Stream stream;
+  final bool rightSide;
+
+  const _ScoreIndicator({
+    required this.type,
+    required this.stream,
+    this.rightSide = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: stream,
+      initialData: 0,
+      builder: (context, asyncSnapshot) {
+        var children = [
+          switch (type) {
+            GameTickType.none => Icon(Icons.question_mark, size: 36, color: AppTheme.of(context).foregroundColor),
+            GameTickType.circle => Icon(Icons.circle_outlined, size: 32, color: AppTheme.of(context).foregroundColor),
+            GameTickType.cross => Icon(Icons.close, size: 36, color: AppTheme.of(context).foregroundColor),
+          },
+          Text(
+            asyncSnapshot.data.toString(),
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+          ),
+        ];
+        if (rightSide) {
+          children = children.reversed.toList();
+        }
+        return Row(
+          spacing: AppPadding.medium,
+          children: children,
+        );
+      },
+    );
+  }
+}
+
+class _PlayerPlayingIndicator extends ConsumerWidget {
+  const _PlayerPlayingIndicator();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final gameGridState = ref.watch(gameGridProvider);
+
     return AnimatedSwitcher(
       duration: Duration(milliseconds: 100),
       transitionBuilder: (child, animation) => ScaleTransition(
@@ -213,35 +283,6 @@ class GameGridPage extends ConsumerWidget {
       },
     );
   }
-
-  Widget _scoreIndicator({
-    required GameTickType type,
-    required Stream stream,
-    bool rightSide = false,
-  }) => StreamBuilder(
-    stream: stream,
-    initialData: 0,
-    builder: (context, asyncSnapshot) {
-      var children = [
-        switch (type) {
-          GameTickType.none => Icon(Icons.question_mark, size: 36, color: AppTheme.of(context).foregroundColor),
-          GameTickType.circle => Icon(Icons.circle_outlined, size: 32, color: AppTheme.of(context).foregroundColor),
-          GameTickType.cross => Icon(Icons.close, size: 36, color: AppTheme.of(context).foregroundColor),
-        },
-        Text(
-          asyncSnapshot.data.toString(),
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-        ),
-      ];
-      if (rightSide) {
-        children = children.reversed.toList();
-      }
-      return Row(
-        spacing: AppPadding.medium,
-        children: children,
-      );
-    },
-  );
 }
 
 class _WinnerLinePainter extends CustomPainter {
